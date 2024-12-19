@@ -1,8 +1,7 @@
 import tkinter as tk
-import tkinter as ttk
+from tkinter import ttk
 from tkinter import messagebox, Label
 from tkinter import simpledialog
-from tkinter.messagebox import showinfo
 from PIL import Image
 import datetime
 
@@ -19,6 +18,7 @@ def save_notes():
     with open("save.txt", "w", encoding="utf-8") as file:  # Open file in write mode
         for i in range(NOTES):
             file.write(f"Title: {notes_title[i]}\n")
+            file.write(f"Category: {notes_category[i]}\n")
             file.write(f"Time: {notes_time[i]}\n")
             file.write(f"Content: {notes_ary[i]}\n")
             file.write("---\n")  # Separator for each note
@@ -29,9 +29,9 @@ def load_notes():
     try:
         with open("save.txt", "r", encoding="utf-8") as file:  # Open file in read mode
             notes_title.clear()
-            notes_ary.clear()
-            notes_time.clear()
             notes_category.clear()
+            notes_time.clear()
+            notes_ary.clear()
             NOTES = 0
 
             lines = file.readlines()
@@ -70,11 +70,11 @@ def load_notes():
 def add_note():
     global NOTES
     if NOTES < MAX:
-        title = simpledialog.askstring("Add Note", "Enter Note Title:")
+        title = custom_text_dialog("Add Note", "Enter Note Title:")
         if not title:
             return
 
-        category = simpledialog.askstring("Add Note", "Enter Note Category:")
+        category = custom_text_dialog("Add Note", "Enter Note Category:")
         if not category:
             return
 
@@ -85,9 +85,9 @@ def add_note():
         time = datetime.datetime.now().strftime("%D-%H:%M:%S")
 
         notes_title.append(title)
-        notes_ary.append(note)
-        notes_time.append(time)
         notes_category.append(category)
+        notes_time.append(time)
+        notes_ary.append(note)
         NOTES += 1
         update_list()
         save_notes()
@@ -105,8 +105,8 @@ def view_note():
     note_id = selected[0]
     title = notes_title[note_id]
     category = notes_category[note_id]
-    content = notes_ary[note_id]
     time = notes_time[note_id]
+    content = notes_ary[note_id]
     messagebox.showinfo(
         "View Note",
         f"Title: {title}\n\nCategory: {category}\n\nContent: {content}\n\nTime: {time}",
@@ -290,8 +290,12 @@ note_list = tk.Listbox(
     bg="#3c495e",
     fg="#dcdee6",
 )
-note_list.pack()
 
+scrollbar = tk.Scrollbar(frame_middle, orient="vertical", command=note_list.yview)
+note_list.configure(yscrollcommand=scrollbar.set)
+scrollbar.grid(row=0, column=1, sticky="ns")
+
+note_list.grid(row=0, column=0, padx=10, pady=10)
 
 def show_preview(event):
     selected = note_list.curselection()
