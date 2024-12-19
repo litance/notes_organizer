@@ -23,6 +23,7 @@ def save_notes():
             file.write(f"Content: {notes_ary[i]}\n")
             file.write("---\n")  # Separator for each note
 
+
 def load_notes():
     global NOTES
     try:
@@ -52,13 +53,19 @@ def load_notes():
                         notes_time.append(time)
                         notes_ary.append(content)
                         NOTES += 1
-                    title, category, time, content = "", "", "", ""  # Reset for the next note
+                    title, category, time, content = (
+                        "",
+                        "",
+                        "",
+                        "",
+                    )  # Reset for the next note
 
             update_list()
     except FileNotFoundError:
         messagebox.showwarning("Warning", "No saved notes file found.")
     except Exception as e:
         messagebox.showerror("Error", f"Failed to load notes: {e}")
+
 
 def add_note():
     global NOTES
@@ -101,8 +108,10 @@ def view_note():
     content = notes_ary[note_id]
     time = notes_time[note_id]
     messagebox.showinfo(
-        "View Note", f"Title: {title}\n\nCategory: {category}\n\nContent: {content}\n\nTime: {time}"
+        "View Note",
+        f"Title: {title}\n\nCategory: {category}\n\nContent: {content}\n\nTime: {time}",
     )
+
 
 def search_note():
     query = simpledialog.askstring("Search Note", "Enter title to search:")
@@ -119,6 +128,7 @@ def search_note():
         messagebox.showinfo("Search Results", f"Matching Notes:\n\n{result_str}")
     else:
         messagebox.showinfo("No Results", "No notes match your search.")
+
 
 def edit_note():
     selected = note_list.curselection()
@@ -172,6 +182,7 @@ def delete_note():
         NOTES -= 1
         update_list()
 
+
 def clear_notes():
     global NOTES
     confirm = messagebox.askyesno(
@@ -186,10 +197,13 @@ def clear_notes():
         update_list()
         save_notes()
 
+
 def update_list():
     note_list.delete(0, tk.END)
     for i in range(NOTES):
-        note_list.insert(tk.END, f"{i}  | {notes_category[i]} | {notes_title[i]}")
+        note_list.insert(
+            tk.END, f"{i}      |    {notes_category[i]}    |    {notes_title[i]}"
+        )
 
 
 # Custom text dialog for multi-line input
@@ -223,6 +237,7 @@ def custom_text_dialog(title, prompt, initialvalue=""):
     root.wait_window(dialog)
 
     return result["value"]
+
 
 # GUI section
 # Initialize the main application window
@@ -277,6 +292,7 @@ note_list = tk.Listbox(
 )
 note_list.pack()
 
+
 def show_preview(event):
     selected = note_list.curselection()
     if not selected:
@@ -284,6 +300,7 @@ def show_preview(event):
     note_id = selected[0]
     content = notes_ary[note_id]
     messagebox.showinfo("Note Preview", f"Content:\n\n{content}")
+
 
 note_list.bind("<Double-1>", show_preview)
 
@@ -323,18 +340,20 @@ btn_view = tk.Button(
 )
 btn_view.grid(row=2, column=0, padx=30, pady=10)
 
-btn_search = tk.Button(frame_side,
-                       background="WHITE",
-                       foreground="BLACK",
-                       activebackground="GREY",
-                       activeforeground="BLACK",
-                       highlightthickness=2,
-                       width=15,
-                       height=2,
-                       border=0,
-                       cursor="hand1",
-                       text="Search Note",
-                       command=search_note)
+btn_search = tk.Button(
+    frame_side,
+    background="WHITE",
+    foreground="BLACK",
+    activebackground="GREY",
+    activeforeground="BLACK",
+    highlightthickness=2,
+    width=15,
+    height=2,
+    border=0,
+    cursor="hand1",
+    text="Search Note",
+    command=search_note,
+)
 btn_search.grid(row=3, column=0, padx=30, pady=10)
 
 btn_edit = tk.Button(
