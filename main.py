@@ -1,10 +1,10 @@
 import tkinter as tk
-import tkinter.ttk as ttk
-from tkinter import messagebox, PhotoImage, Label
+import tkinter as ttk
+from tkinter import messagebox, Label
 from tkinter import simpledialog
+from tkinter.messagebox import showinfo
 from PIL import Image
 import datetime
-import json
 
 # Initialize global variables
 MAX = 100
@@ -12,7 +12,7 @@ NOTES = 0  # Note counter
 notes_ary = [""] * MAX
 notes_title = [""] * MAX
 notes_time = [""] * MAX
-
+notes_category = [""] * MAX
 
 # Functions for GUI actions
 def save_notes():
@@ -30,14 +30,17 @@ def load_notes():
             notes_title.clear()
             notes_ary.clear()
             notes_time.clear()
+            notes_category.clear()
             NOTES = 0
 
             lines = file.readlines()
-            title, time, content = "", "", ""
+            title, category, time, content = "", "", "", ""
             for line in lines:
                 line = line.strip()
                 if line.startswith("Title:"):
                     title = line.replace("Title: ", "")
+                elif line.startswith("Category:"):
+                    category = line.replace("Category: ", "")
                 elif line.startswith("Time:"):
                     time = line.replace("Time: ", "")
                 elif line.startswith("Content:"):
@@ -45,10 +48,11 @@ def load_notes():
                 elif line == "---":  # End of one note
                     if title and time and content:
                         notes_title.append(title)
+                        notes_category.append(category)
                         notes_time.append(time)
                         notes_ary.append(content)
                         NOTES += 1
-                    title, time, content = "", "", ""  # Reset for the next note
+                    title, category, time, content = "", "", "", ""  # Reset for the next note
 
             update_list()
     except FileNotFoundError:
@@ -63,6 +67,10 @@ def add_note():
         if not title:
             return
 
+        category = simpledialog.askstring("Add Note", "Enter Note Category:")
+        if not category:
+            return
+
         note = custom_text_dialog("Add Note", "Enter Note Content:")
         if not note:
             return
@@ -72,6 +80,7 @@ def add_note():
         notes_title.append(title)
         notes_ary.append(note)
         notes_time.append(time)
+        notes_category.append(category)
         NOTES += 1
         update_list()
         save_notes()
@@ -88,12 +97,28 @@ def view_note():
 
     note_id = selected[0]
     title = notes_title[note_id]
+    category = notes_category[note_id]
     content = notes_ary[note_id]
     time = notes_time[note_id]
     messagebox.showinfo(
-        "View Note", f"Title: {title}\n\nContent: {content}\n\nTime: {time}"
+        "View Note", f"Title: {title}\n\nCategory: {category}\n\nContent: {content}\n\nTime: {time}"
     )
 
+def search_note():
+    query = simpledialog.askstring("Search Note", "Enter title to search:")
+    if not query:
+        return
+
+    results = []
+    for i in range(NOTES):
+        if query.lower() in notes_title[i].lower():
+            results.append((i, notes_title[i]))
+
+    if results:
+        result_str = "\n".join([f"{i}. {title}" for i, title in results])
+        messagebox.showinfo("Search Results", f"Matching Notes:\n\n{result_str}")
+    else:
+        messagebox.showinfo("No Results", "No notes match your search.")
 
 def edit_note():
     selected = note_list.curselection()
@@ -108,6 +133,12 @@ def edit_note():
     if new_title is None:
         return
 
+    new_category = simpledialog.askstring(
+        "Edit Note", "Edit Note Category:", initialvalue=notes_category[note_id]
+    )
+    if new_category is None:
+        return
+
     new_content = custom_text_dialog(
         "Edit Note", "Edit Note Content:", initialvalue=notes_ary[note_id]
     )
@@ -115,8 +146,10 @@ def edit_note():
         return
 
     notes_title[note_id] = new_title
+    notes_category[note_id] = new_category
     notes_ary[note_id] = new_content
     update_list()
+    save_notes()
     messagebox.showinfo("Success", "Note edited successfully!")
 
 
@@ -134,10 +167,10 @@ def delete_note():
     if confirm:
         notes_ary.pop(note_id)
         notes_title.pop(note_id)
+        notes_category.pop(note_id)
         notes_time.pop(note_id)
         NOTES -= 1
         update_list()
-
 
 def clear_notes():
     global NOTES
@@ -147,15 +180,16 @@ def clear_notes():
     if confirm:
         notes_ary[:] = [""] * MAX
         notes_title[:] = [""] * MAX
+        notes_category[:] = [""] * MAX
         notes_time[:] = [""] * MAX
         NOTES = 0
         update_list()
-
+        save_notes()
 
 def update_list():
     note_list.delete(0, tk.END)
     for i in range(NOTES):
-        note_list.insert(tk.END, f"{i}  | {notes_title[i]}")
+        note_list.insert(tk.END, f"{i}  | {notes_category[i]} | {notes_title[i]}")
 
 
 # Custom text dialog for multi-line input
@@ -190,11 +224,10 @@ def custom_text_dialog(title, prompt, initialvalue=""):
 
     return result["value"]
 
-
 # GUI section
 # Initialize the main application window
 root = tk.Tk()
-root.geometry("800x450")
+root.geometry("800x500")
 root.title("Notes Organizer")
 
 # Create background
@@ -244,6 +277,16 @@ note_list = tk.Listbox(
 )
 note_list.pack()
 
+def show_preview(event):
+    selected = note_list.curselection()
+    if not selected:
+        return
+    note_id = selected[0]
+    content = notes_ary[note_id]
+    messagebox.showinfo("Note Preview", f"Content:\n\n{content}")
+
+note_list.bind("<Double-1>", show_preview)
+
 btn_add = tk.Button(
     frame_side,
     background="WHITE",
@@ -280,6 +323,20 @@ btn_view = tk.Button(
 )
 btn_view.grid(row=2, column=0, padx=30, pady=10)
 
+btn_search = tk.Button(frame_side,
+                       background="WHITE",
+                       foreground="BLACK",
+                       activebackground="GREY",
+                       activeforeground="BLACK",
+                       highlightthickness=2,
+                       width=15,
+                       height=2,
+                       border=0,
+                       cursor="hand1",
+                       text="Search Note",
+                       command=search_note)
+btn_search.grid(row=3, column=0, padx=30, pady=10)
+
 btn_edit = tk.Button(
     frame_side,
     background="WHITE",
@@ -296,7 +353,7 @@ btn_edit = tk.Button(
     text="Edit Note",
     command=edit_note,
 )
-btn_edit.grid(row=3, column=0, padx=30, pady=10)
+btn_edit.grid(row=4, column=0, padx=30, pady=10)
 
 btn_delete = tk.Button(
     frame_side,
@@ -314,7 +371,7 @@ btn_delete = tk.Button(
     text="Delete Note",
     command=delete_note,
 )
-btn_delete.grid(row=4, column=0, padx=30, pady=10)
+btn_delete.grid(row=5, column=0, padx=30, pady=10)
 
 btn_clear = tk.Button(
     frame_side,
@@ -332,7 +389,7 @@ btn_clear = tk.Button(
     text="Clear Note",
     command=clear_notes,
 )
-btn_clear.grid(row=5, column=0, padx=30, pady=10)
+btn_clear.grid(row=6, column=0, padx=30, pady=10)
 
 btn_exit = tk.Button(
     frame_side,
@@ -350,7 +407,7 @@ btn_exit = tk.Button(
     text="Exit",
     command=root.destroy,
 )
-btn_exit.grid(row=6, column=0, padx=30, pady=10, sticky="n")
+btn_exit.grid(row=7, column=0, padx=30, pady=10, sticky="n")
 
 # Run
 load_notes()
